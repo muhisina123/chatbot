@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>chatbot</title>
+ <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.3/dist/tailwind.min.css"
+  rel="stylesheet"
+/>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body class="bg-gray-900 text-white">
+  <header class="text-center py-5">
+    <h1  class="text-2xl font-bold">muhisina chatbot</h1>
+  </header>
+  <div  class="flex justify-center">
+    <div class="px-2 w-full max-w-2xl">
+       <div id="chatbox"> </div>
+       <div class="flex flex-row my-5">
+        <input  id="inputField" class="shadow  flex-grow rounded text-black p-2 mr-2"  type="text"  placeholder="Enter your message"/> 
+        <button id="sendButton" class="bg-green-500 rounded py-2 px-4 text-white font-bold">
+          Ask Advisor
+        </button> 
+      </div>
+      </div>
+     
+  </div>
+</body>
+<script>
+  
+const chatbox = document.getElementById("chatbox");   // Chatbox div
+const messageInput = document.getElementById("inputField"); // Input field
+const sendButton = document.getElementById("sendButton"); // Send button
+
+let websocket;
+let accumulatedResponse = ""; // Variable to accumulate the response message
+
+  // Step 1: Establish a WebSocket connection
+function initializeWebsocket(){ 
+ websocket = new WebSocket("wss://backend.buildpicoapps.com/api/chatbot/chat");
+//const websocket = new WebSocket("wss://echo.websocket.org");
+
+  // Step 2: Handle WebSocket events
+
+  websocket.onopen =function(){
+    console.log("WebSocket connection established.");
+    // Add an event listener to the button to send the message when clicked
+    sendButton.addEventListener("click", sendMessageToChatbox);
+
+  };
+
+  websocket.onmessage =function(event){
+    const data =event.data;
+    accumulatedResponse +=data;
+    //console.log('server response:' , data);
+
+    // Check if the message is complete (basic check for end punctuation)
+    if ( data.includes(".") || data.includes("?") || data.includes("!")) {
+        displayResponse(accumulatedResponse.trim()); // Display full message 
+        accumulatedResponse = ""; // Reset for next message
+    }
+  };
+    websocket.onerror = function(error){
+    console.log("WebSocket error ", error);
+  };
+ 
+  websocket.onclose = function(){
+    console.log("WebSocket connection closed", accumulatedResponse);
+   // displayResponse(accumulatedResponse.trim());
+   console.warn("WebSocket connection closed. Reconnecting...");
+
+   setTimeout(initializeWebsocket, 2000); // Attempt reconnection after 2 seconds
+   };
+}
+// to send the message when clicked
+function sendMessageToChatbox(){
+  const messageText = messageInput.value.trim(); // This gets the text entered by the user and removes any extra whitespace using .trim()
+
+  if(messageText !== "") {   // Ensure the input is not empty 
+
+const messageElement = document.createElement("div")
+// Add classes or styles to the message (optional, for better design)
+messageElement.className = "bg-blue-500 text-white p-2 rounded my-2 self-end";
+
+ // Set the message text
+ messageElement.textContent = messageText;
+
+chatbox.appendChild( messageElement); //"appendChild expects a DOM element, not a plain string.To fix this,we need to create a new DOM element (like a <div> or <p>) for each message, set its content to the message text, and then append that element to the chatbox."
+chatbox.scrollTop = chatbox.scrollHeight;//This ensures that the chatbox automatically scrolls to the bottom when a new message is added
+messageInput.value = ""; //This clears the input field after the message is sent. 
+
+const messageData = {
+    chatId: crypto.randomUUID(),  // Generate a unique chat ID
+    appId: "money-saver",       // Application ID (replace if needed)
+    systemPrompt: "You are a financial advisor helping users manage their salary wisely and save money effectively.", // The system's role
+    message: messageText,          // The user's message
+  };
+
+ // Convert the object to a JSON string
+ const jsonMessage = JSON.stringify(messageData);
+
+
+  // Send message to WebSocket server if the connection is open
+  if (websocket.readyState === WebSocket.OPEN) {
+      websocket.send(jsonMessage);
+     // websocket.send(messageText);
+    } else {
+      console.error("WebSocket is not open. Message not sent.");
+    }
+  }
+}
+
+function displayResponse(msg){
+  if (!msg){ return;}
+    const messageElement = document.createElement("div");
+// Add classes or styles to the message (optional, for better design)
+messageElement.className = "bg-green-500 text-white p-2 rounded my-2 self-start";
+ // Set the message text
+ messageElement.textContent = msg;
+
+chatbox.appendChild( messageElement); //"appendChild expects a DOM element, not a plain string.To fix this,we need to create a new DOM element (like a <div> or <p>) for each message, set its content to the message text, and then append that element to the chatbox."
+chatbox.scrollTop = chatbox.scrollHeight;//This ensures that the chatbox automatically scrolls to the bottom when a new message is added
+console.log("WebSocket msg ", msg);
+}
+
+messageInput.addEventListener("keydown", function(event){
+  if(event.key === "Enter" && messageInput.value.trim() !== "" ){
+    event.preventDefault();
+    sendButton.click();
+  }
+});
+
+
+initializeWebsocket();
+</script>
+</html>
