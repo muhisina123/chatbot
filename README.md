@@ -20,7 +20,7 @@ A simple chatbot application that connects to a WebSocket server to provide fina
 - **Crypto API** for generating unique chat IDs
 
 ---
-![Chatbot Screenshot](screenshot.png)
+![Chatbot Screenshot](https://github.com/muhisina123/chatbot/blob/main/localhost_pico_chatbot_picodupe.html.png) c)
 
 ## 📂 Project Structure
 ```
